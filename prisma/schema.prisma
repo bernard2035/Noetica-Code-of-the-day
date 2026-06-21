@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String?   @unique
+  emailVerified DateTime?
+  phoneNumber   String?   @unique
+  passwordHash  String?
+  role          String    @default("VISITOR")
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+
+  adminProfile    AdminProfile?
+  securityProfile SecurityProfile?
+  residentProfile ResidentProfile?
+  visitorProfile  VisitorProfile?
+  notifications   Notification[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  ext_expires_in    Int?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model AdminProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SecurityProfile {
+  id             String  @id @default(cuid())
+  userId         String  @unique
+  uniqueId       String  @unique
+  securityNumber String?
+  badgeNumber    String?
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ResidentProfile {
+  id                String  @id @default(cuid())
+  userId            String  @unique
+  uniqueId          String  @unique
+  landlord          String?
+  address           String?
+  lat               Float?
+  lng               Float?
+  occupantCount     Int     @default(1)
+  securityFeeStatus String  @default("PENDING") // PENDING, PAID
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  codes    AccessCode[]
+  payments Payment[]
+}
+
+model VisitorProfile {
+  id             String  @id @default(cuid())
+  userId         String  @unique
+  carPlateNumber String?
+  vehicleBrand   String?
+  vehicleModel   String?
+  vehicleColor   String?
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  accessCodes AccessCode[]
+}
+
+model AccessCode {
+  id               String   @id @default(cuid())
+  code             String   @unique
+  residentId       String
+  visitorId        String?
+  guestName        String?
+  guestVehicleInfo String?
+  creationTime     DateTime @default(now())
+  expirationTime   DateTime
+  status           String   @default("ACTIVE")
+
+  resident ResidentProfile @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  visitor  VisitorProfile? @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id         String          @id @default(cuid())
+  reference  String          @unique
+  amount     Float
+  status     String // SUCCESS, PENDING, FAILED
+  date       DateTime        @default(now())
+  residentId String
+  resident   ResidentProfile @relation(fields: [residentId], references: [id], onDelete: Cascade)
+}
+
+model Computer {
+  id           String   @id @default(cuid())
+  macAddress   String   @unique
+  description  String?
+  ownerName    String?
+  registeredAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  category  String   @default("SYSTEM") // SYSTEM, SECURITY, BILLING
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EstateSettings {
+  id                 String   @id @default(cuid())
+  defaultSecurityFee Float    @default(0)
+  estateAddress      String?
+  estateLat          Float?
+  estateLng          Float?
+  updatedAt          DateTime @updatedAt
+}
