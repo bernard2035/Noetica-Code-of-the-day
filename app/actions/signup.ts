@@ -19,7 +19,7 @@ export async function signupResident(formData: FormData) {
     });
 
     if (existingUser) {
-      return { success: false, message: "Email is already registered" };
+      return { success: false, message: "A user with this email address already exists. Please go back to the sign in page." };
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
