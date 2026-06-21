@@ -185,6 +185,12 @@ function LoginForm() {
           </button>
         </motion.div>
 
+        <motion.div variants={itemVariants} className="mt-8 text-center">
+             <button onClick={() => router.push('/signup')} className="text-sm text-slate-400 hover:text-white transition-colors">
+               Don't have an account? Sign Up
+             </button>
+        </motion.div>
+
       </div>
     </motion.div>
   );
