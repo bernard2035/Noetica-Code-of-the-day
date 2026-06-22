@@ -44,3 +44,4 @@ deploy.zip
 webapp_logs.zip
 azure_logs/
 azure_logs2/
+*.zip
