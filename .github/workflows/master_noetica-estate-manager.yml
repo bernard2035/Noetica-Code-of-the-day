@@ -33,10 +33,7 @@ jobs:
           cp -r .next/static .next/standalone/.next/ || true
           cp -r prisma .next/standalone/ || true
           cd .next/standalone
-          # Remove node_modules to avoid huge zip file and ZipDeploy timeout
-          rm -rf node_modules
-          # Create .deployment file to force Kudu to run npm install on the standalone package.json
-          echo -e "[config]\nSCM_DO_BUILD_DURING_DEPLOYMENT=true" > .deployment
+          # Zip the standalone output completely so Azure mounts it as-is without needing Kudu to install packages
           zip -r ../../release.zip . -q
           cd ../../
 
