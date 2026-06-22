@@ -56,6 +56,11 @@ jobs:
         with:
           name: node-app
 
+      - name: Prepare deployment package
+        run: |
+          mkdir deploy_package
+          unzip release.zip -d deploy_package/
+
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
@@ -63,4 +68,4 @@ jobs:
           app-name: 'noetica-estate-manager'
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_B1234 }}
-          package: release.zip
+          package: deploy_package
