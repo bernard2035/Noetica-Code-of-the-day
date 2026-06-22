@@ -13,11 +13,13 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      allowDangerousEmailAccountLinking: true,
     }),
     AzureADProvider({
       clientId: process.env.MICROSOFT_CLIENT_ID || "",
       clientSecret: process.env.MICROSOFT_CLIENT_SECRET || "",
       tenantId: process.env.MICROSOFT_TENANT_ID || "",
+      allowDangerousEmailAccountLinking: true,
       profile(profile) {
         return {
           id: profile.sub || profile.oid || profile.id,
