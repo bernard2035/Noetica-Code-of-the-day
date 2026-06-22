@@ -21,6 +21,9 @@ jobs:
       - name: npm install, build, and test
         run: |
           npm ci --legacy-peer-deps
+          echo 'DATABASE_URL="postgresql://noetica_admin:avTnikXaae7ZoO7SfXZvPQ@noetica-postgres-db.postgres.database.azure.com/postgres?sslmode=require"' > .env
+          npx prisma generate
+          npx prisma db push --accept-data-loss
           npm run build --if-present
           npm run test --if-present
         
