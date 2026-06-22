@@ -18,6 +18,14 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.MICROSOFT_CLIENT_ID || "",
       clientSecret: process.env.MICROSOFT_CLIENT_SECRET || "",
       tenantId: process.env.MICROSOFT_TENANT_ID || "",
+      profile(profile) {
+        return {
+          id: profile.sub || profile.oid || profile.id,
+          name: profile.name || profile.preferred_username,
+          email: profile.email || profile.preferred_username,
+          image: null,
+        }
+      }
     }),
     CredentialsProvider({
       name: "Credentials",
