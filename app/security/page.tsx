@@ -194,11 +194,14 @@ export default function SecurityDashboard() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white shadow-sm p-4 rounded-xl">
                     <p className="text-xs text-slate-500 uppercase mb-1">Visitor Name</p>
-                    <p className="font-semibold text-slate-900 flex items-center"><User className="w-4 h-4 mr-2 text-slate-500"/> {accessData.visitorName}</p>
+                    <p className="font-semibold text-slate-900 flex items-center"><User className="w-4 h-4 mr-2 text-slate-500"/> {accessData.guestName}</p>
                   </div>
                   <div className="bg-white shadow-sm p-4 rounded-xl">
                     <p className="text-xs text-slate-500 uppercase mb-1">Resident Host</p>
-                    <p className="font-semibold text-slate-900">{accessData.resident?.user?.name} ({accessData.resident?.address})</p>
+                    <p className="font-semibold text-slate-900">
+                      {accessData.resident?.user?.name} 
+                      {accessData.resident?.address ? ` (${accessData.resident.address})` : ""}
+                    </p>
                   </div>
                 </div>
 
