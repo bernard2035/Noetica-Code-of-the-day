@@ -2,9 +2,10 @@
 
 import { motion } from "framer-motion";
 import { Users, Shield, Car, AlertTriangle, Play, Pause, Camera } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import EstateMapContainer from "@/components/EstateMapContainer";
+import { getAdminDashboardStats } from "@/app/actions/admin";
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -17,12 +18,26 @@ export default function AdminDashboard() {
   const { data: session } = useSession();
   const firstName = session?.user?.name?.split(" ")[0] || "Admin";
   const [cctvActive, setCctvActive] = useState(true);
+  
+  const [statsData, setStatsData] = useState<any>(null);
+
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const data = await getAdminDashboardStats();
+        setStatsData(data);
+      } catch (err) {
+        console.error("Failed to load admin stats", err);
+      }
+    }
+    loadStats();
+  }, []);
 
   const stats = [
-    { label: "Total Residents", value: "245", trend: "+12", color: "text-slate-900", bg: "bg-slate-100", border: "border-slate-200", icon: Users },
-    { label: "Active Guards", value: "8", trend: "On Duty", color: "text-slate-900", bg: "bg-slate-100", border: "border-slate-200", icon: Shield },
-    { label: "Vehicles Today", value: "156", trend: "+24%", color: "text-slate-900", bg: "bg-slate-100", border: "border-slate-200", icon: Car },
-    { label: "Security Alerts", value: "0", trend: "Clear", color: "text-slate-900", bg: "bg-slate-100", border: "border-slate-200", icon: AlertTriangle },
+    { label: "Total Residents", value: statsData?.totalResidents ?? "0", trend: "Active", color: "text-slate-900", bg: "bg-slate-100", border: "border-slate-200", icon: Users },
+    { label: "Active Guards", value: statsData?.activeGuards ?? "0", trend: "On Duty", color: "text-slate-900", bg: "bg-slate-100", border: "border-slate-200", icon: Shield },
+    { label: "Vehicles Today", value: statsData?.vehiclesToday ?? "0", trend: "Today", color: "text-slate-900", bg: "bg-slate-100", border: "border-slate-200", icon: Car },
+    { label: "Security Alerts", value: statsData?.securityAlerts ?? "0", trend: "Active", color: "text-slate-900", bg: "bg-slate-100", border: "border-slate-200", icon: AlertTriangle },
   ];
 
   return (
@@ -93,8 +108,14 @@ export default function AdminDashboard() {
               {[1, 2, 3, 4].map((cam) => (
                 <div key={cam} className="relative bg-white rounded border border-slate-200 overflow-hidden group">
                   {/* Mock static noise / overlay for camera */}
-                  <div className={`absolute inset-0 bg-slate-100 flex items-center justify-center ${cctvActive ? 'opacity-20' : 'opacity-100'}`}>
-                    {!cctvActive && <span className="text-slate-600 font-mono text-sm">OFFLINE</span>}
+                  <div className={`absolute inset-0 bg-slate-100 flex flex-col items-center justify-center ${cctvActive ? 'opacity-20' : 'opacity-100'}`}>
+                    {!cctvActive && (
+                      <>
+                        <Camera className="w-8 h-8 text-slate-300 mb-2" strokeWidth={1} />
+                        <span className="text-slate-400 font-medium text-sm">NO SIGNAL</span>
+                        <span className="text-slate-400 text-xs mt-1">Check Camera Connection</span>
+                      </>
+                    )}
                   </div>
                   
                   {cctvActive && (
@@ -102,10 +123,10 @@ export default function AdminDashboard() {
                       <div className="absolute inset-0 flex flex-col items-center justify-center opacity-10">
                         <Camera className="w-16 h-16 text-slate-900" />
                       </div>
-                      <div className="absolute top-2 left-2 text-slate-900 font-mono text-[10px] bg-black/50 px-2 py-1 rounded">
+                      <div className="absolute top-2 left-2 text-slate-900 font-mono text-[10px] bg-black/50 px-2 py-1 rounded text-white">
                         CAM {cam} - {cam === 1 ? 'MAIN GATE IN' : cam === 2 ? 'MAIN GATE OUT' : cam === 3 ? 'PEDESTRIAN' : 'PERIMETER'}
                       </div>
-                      <div className="absolute bottom-2 right-2 text-slate-900 font-mono text-[10px] bg-black/50 px-2 py-1 rounded flex items-center">
+                      <div className="absolute bottom-2 right-2 font-mono text-[10px] bg-black/50 px-2 py-1 rounded flex items-center text-white">
                         <span className="w-1.5 h-1.5 bg-red-500 rounded-full mr-1 animate-pulse"></span> REC
                       </div>
                     </>
@@ -141,18 +162,17 @@ export default function AdminDashboard() {
           <div className="glass-panel p-6 rounded-xl border border-slate-200">
             <h3 className="font-semibold text-slate-900 mb-4">System Logs</h3>
             <div className="space-y-4">
-              <div className="flex flex-col">
-                <span className="text-sm text-slate-900 font-medium">New Resident Added</span>
-                <span className="text-xs text-slate-9000">Unit 12C - 2 mins ago</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm text-slate-900 font-medium">Security Shift Change</span>
-                <span className="text-xs text-slate-9000">Main Gate - 1 hour ago</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm text-slate-900 font-medium">System Backup Complete</span>
-                <span className="text-xs text-slate-9000">Server - 3 hours ago</span>
-              </div>
+              {statsData?.recentLogs?.length > 0 ? (
+                statsData.recentLogs.map((log: any) => (
+                  <div key={log.id} className="flex flex-col border-b border-slate-100 pb-2 last:border-0 last:pb-0">
+                    <span className="text-sm text-slate-900 font-medium">{log.title}</span>
+                    <span className="text-xs text-slate-500">{new Date(log.createdAt).toLocaleString()}</span>
+                    <span className="text-xs text-slate-400 mt-1">{log.message}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-500">No recent system logs.</p>
+              )}
             </div>
           </div>
         </motion.div>

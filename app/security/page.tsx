@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, CheckCircle, XCircle, User, Car, Clock, ShieldAlert, ScanLine, Loader2 } from "lucide-react";
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { useSession } from "next-auth/react";
 import EstateMapContainer from "@/components/EstateMapContainer";
-import { validateAccessCode, markCodeAsUsed } from "@/app/actions/security";
+import { validateAccessCode, markCodeAsUsed, getLiveGateActivity } from "@/app/actions/security";
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -30,6 +30,23 @@ export default function SecurityDashboard() {
   // New vehicle info (if added by security)
   const [securityVehicleInfo, setSecurityVehicleInfo] = useState("");
   const [isLogging, setIsLogging] = useState(false);
+  
+  const [liveActivity, setLiveActivity] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function fetchActivity() {
+      try {
+        const activity = await getLiveGateActivity();
+        setLiveActivity(activity);
+      } catch (err) {
+        console.error("Failed to load gate activity", err);
+      }
+    }
+    fetchActivity();
+    // Poll every 10 seconds for new activity
+    const interval = setInterval(fetchActivity, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const performVerification = async (code: string) => {
     if (!code) return;
@@ -263,20 +280,26 @@ export default function SecurityDashboard() {
 
         <div className="glass-panel rounded-xl border border-slate-200 overflow-hidden h-[calc(100vh-200px)] flex flex-col">
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {[1, 2, 3, 4, 5, 6].map((log, i) => (
-              <div key={log} className="bg-white shadow-sm border border-slate-200 p-4 rounded-lg flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className={`w-2 h-10 rounded-full mr-4 ${i === 2 ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
-                  <div>
-                    <p className="text-slate-900 font-medium text-sm">
-                      {i === 2 ? 'Failed Entry Attempt' : `Entry: Visitor for Unit ${i + 1}A`}
-                    </p>
-                    <p className="text-slate-9000 text-xs mt-1 font-mono">Code: ••••{Math.floor(Math.random() * 99)} | {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+            {liveActivity.length > 0 ? (
+              liveActivity.map((log: any) => (
+                <div key={log.id} className="bg-white shadow-sm border border-slate-200 p-4 rounded-lg flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className={`w-2 h-10 rounded-full mr-4 ${log.status === 'EXPIRED' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+                    <div>
+                      <p className="text-slate-900 font-medium text-sm">
+                        {log.status === 'EXPIRED' ? 'Expired Entry Attempt' : `Entry: Visitor for ${log.resident?.user?.name || "Unknown"} (${log.resident?.address || "Unknown"})`}
+                      </p>
+                      <p className="text-slate-500 text-xs mt-1 font-mono">
+                        Code: ••••{log.code.slice(-2)} | {new Date(log.creationTime).toLocaleString()} | {log.guestName || "Unknown"}
+                      </p>
+                    </div>
                   </div>
+                  {log.status === 'EXPIRED' && <ShieldAlert className="w-5 h-5 text-amber-500" />}
                 </div>
-                {i === 2 && <ShieldAlert className="w-5 h-5 text-red-500" />}
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-sm text-slate-500 p-4 text-center">No recent gate activity.</p>
+            )}
           </div>
         </div>
 

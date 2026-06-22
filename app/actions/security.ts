@@ -57,3 +57,26 @@ export async function markCodeAsUsed(codeId: string, vehicleInfo?: string) {
 
   return { success: true };
 }
+
+export async function getLiveGateActivity() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || (session.user as any).role !== "SECURITY" && (session.user as any).role !== "ADMIN") {
+    throw new Error("Unauthorized");
+  }
+
+  const activity = await prisma.accessCode.findMany({
+    where: { 
+      status: { in: ["USED", "EXPIRED"] }
+    },
+    orderBy: { creationTime: "desc" },
+    take: 6,
+    include: {
+      resident: {
+        include: { user: true }
+      },
+      visitor: true
+    }
+  });
+
+  return activity;
+}

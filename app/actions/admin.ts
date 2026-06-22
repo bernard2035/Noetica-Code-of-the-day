@@ -10,23 +10,36 @@ export async function getAdminDashboardStats() {
     throw new Error("Unauthorized: Admin access required.");
   }
 
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
   const [
     totalResidents,
-    totalSecurity,
-    totalCodes,
-    activeCodes
+    activeGuards,
+    vehiclesToday,
+    securityAlerts,
+    recentLogs
   ] = await Promise.all([
     prisma.residentProfile.count(),
     prisma.securityProfile.count(),
-    prisma.accessCode.count(),
-    prisma.accessCode.count({ where: { status: "ACTIVE" } }),
+    prisma.accessCode.count({ 
+      where: { 
+        status: "USED",
+      } 
+    }),
+    prisma.notification.count({ where: { category: "SECURITY" } }),
+    prisma.notification.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 5
+    })
   ]);
 
   return {
     totalResidents,
-    totalSecurity,
-    totalCodes,
-    activeCodes
+    activeGuards,
+    vehiclesToday,
+    securityAlerts,
+    recentLogs
   };
 }
 

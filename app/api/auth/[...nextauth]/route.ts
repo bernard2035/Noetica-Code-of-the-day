@@ -24,6 +24,7 @@ export const authOptions: NextAuthOptions = {
           name: profile.name || profile.preferred_username,
           email: profile.email || profile.preferred_username,
           image: null,
+          role: "VISITOR",
         }
       }
     }),
