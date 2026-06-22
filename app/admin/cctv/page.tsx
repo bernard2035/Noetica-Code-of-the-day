@@ -5,9 +5,9 @@ import { Camera, Maximize2, Video } from "lucide-react";
 
 export default function AdminCCTVPage() {
   const cameras = [
-    { id: 1, name: "Main Gate - Incoming", status: "LIVE" },
-    { id: 2, name: "Main Gate - Outgoing", status: "LIVE" },
-    { id: 3, name: "Pedestrian Walkway", status: "LIVE" },
+    { id: 1, name: "Main Gate - Incoming", status: "OFFLINE" },
+    { id: 2, name: "Main Gate - Outgoing", status: "OFFLINE" },
+    { id: 3, name: "Pedestrian Walkway", status: "OFFLINE" },
     { id: 4, name: "Perimeter Fence North", status: "OFFLINE" },
   ];
 

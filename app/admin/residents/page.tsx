@@ -2,18 +2,29 @@
 
 import { motion } from "framer-motion";
 import { Search, Filter, UserPlus, MoreVertical, Edit, Trash2 } from "lucide-react";
-import { useState } from "react";
-
-const MOCK_RESIDENTS = [
-  { id: "RES-9982X", name: "Ebuka Testing", address: "Block 4, Flat 12A", phone: "+234 800 123 4567", status: "PAID", occupants: 3 },
-  { id: "RES-9983Y", name: "Sarah Mensah", address: "Block 2, Flat 4B", phone: "+234 811 222 3333", status: "PENDING", occupants: 1 },
-  { id: "RES-9984Z", name: "David Ogechukwu", address: "Block 7, Flat 1C", phone: "+234 902 444 5555", status: "PAID", occupants: 4 },
-];
+import { useState, useEffect } from "react";
+import { getAllUsers } from "@/app/actions/admin";
 
 export default function AdminResidentsPage() {
+  const [residents, setResidents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filtered = MOCK_RESIDENTS.filter(r => r.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  useEffect(() => {
+    async function fetchResidents() {
+      try {
+        const users = await getAllUsers();
+        setResidents(users.filter((u: any) => u.role === "RESIDENT"));
+      } catch (err) {
+        console.error("Failed to load residents", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchResidents();
+  }, []);
+
+  const filtered = residents.filter(r => r.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <div className="space-y-6">
@@ -56,7 +67,15 @@ export default function AdminResidentsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50">
-              {filtered.map((res, i) => (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-slate-500">Loading residents...</td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-slate-500">No residents found.</td>
+                </tr>
+              ) : filtered.map((res, i) => (
                 <motion.tr 
                   key={res.id}
                   initial={{ opacity: 0, y: 10 }}
@@ -66,23 +85,23 @@ export default function AdminResidentsPage() {
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="w-8 h-8 rounded-full bg-lime-500/20 flex items-center justify-center text-lime-600 font-bold mr-3">
+                      <div className="w-8 h-8 rounded-full bg-lime-500/20 flex items-center justify-center text-lime-600 font-bold mr-3 uppercase">
                         {res.name.charAt(0)}
                       </div>
                       <div>
                         <div className="text-sm font-medium text-slate-900">{res.name}</div>
-                        <div className="text-xs text-slate-9000">{res.id}</div>
+                        <div className="text-xs text-slate-9000">{res.email}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                    {res.address} <span className="text-slate-9000 text-xs block">{res.occupants} Occupants</span>
+                    {res.residentProfile?.address || "N/A"} <span className="text-slate-9000 text-xs block">{res.residentProfile?.familyMembers?.length || 1} Occupants</span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                    {res.phone}
+                    {res.residentProfile?.phone || "N/A"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {res.status === "PAID" ? (
+                    {res.residentProfile?.billingStatus === "PAID" ? (
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                         Paid
                       </span>

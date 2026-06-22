@@ -3,15 +3,26 @@
 import { motion } from "framer-motion";
 import { Search, Filter, ShieldAlert, CheckCircle, XCircle, Clock } from "lucide-react";
 
+import { useState, useEffect } from "react";
+import { getGateLogs } from "@/app/actions/security";
+
 export default function SecurityLogsPage() {
-  const logs = [
-    { id: 1, type: "ENTRY", status: "SUCCESS", code: "A8F3B9", visitor: "Jane Smith", destination: "Unit 4B", time: "10:24 AM", date: "Today" },
-    { id: 2, type: "EXIT", status: "SUCCESS", code: "K9M2P1", visitor: "Mark Johnson", destination: "Block 12", time: "09:15 AM", date: "Today" },
-    { id: 3, type: "ENTRY", status: "FAILED", code: "INVALID", visitor: "Unknown", destination: "N/A", time: "08:45 AM", date: "Today", reason: "Code Expired" },
-    { id: 4, type: "ENTRY", status: "SUCCESS", code: "X7Y2Z9", visitor: "Delivery Driver", destination: "Unit 1A", time: "Yesterday, 4:30 PM", date: "Yesterday" },
-    { id: 5, type: "ENTRY", status: "FAILED", code: "INVALID", visitor: "Unknown", destination: "N/A", time: "Yesterday, 2:15 PM", date: "Yesterday", reason: "Invalid Code format" },
-    { id: 6, type: "EXIT", status: "SUCCESS", code: "B4N8M2", visitor: "Sarah Connor", destination: "Block 5", time: "Yesterday, 1:00 PM", date: "Yesterday" },
-  ];
+  const [logs, setLogs] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchLogs() {
+      try {
+        const data = await getGateLogs();
+        setLogs(data);
+      } catch (err) {
+        console.error("Failed to load gate logs", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchLogs();
+  }, []);
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
@@ -69,11 +80,19 @@ export default function SecurityLogsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {logs.map((log) => (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-slate-500">Loading logs...</td>
+                </tr>
+              ) : logs.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-slate-500">No recent logs found.</td>
+                </tr>
+              ) : logs.map((log) => (
                 <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="p-4 pl-6">
                     <div className="flex items-center space-x-3">
-                      {log.status === "SUCCESS" ? (
+                      {log.status === "USED" ? (
                         <div className="w-8 h-8 rounded-full bg-lime-50 border border-lime-200 flex items-center justify-center">
                           <CheckCircle className="w-4 h-4 text-lime-600" strokeWidth={2} />
                         </div>
@@ -83,17 +102,17 @@ export default function SecurityLogsPage() {
                         </div>
                       )}
                       <div>
-                        <p className={`text-xs font-bold ${log.status === 'SUCCESS' ? 'text-lime-700' : 'text-red-600'}`}>
-                          {log.status}
+                        <p className={`text-xs font-bold ${log.status === 'USED' ? 'text-lime-700' : 'text-red-600'}`}>
+                          {log.status === "USED" ? "SUCCESS" : "FAILED"}
                         </p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">{log.type}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">ENTRY</p>
                       </div>
                     </div>
                   </td>
                   <td className="p-4">
                     <div className="flex items-center text-slate-700 font-medium text-sm">
                       <Clock className="w-3.5 h-3.5 mr-1.5 text-slate-400" strokeWidth={1.5} />
-                      {log.time}
+                      {new Date(log.creationTime).toLocaleString()}
                     </div>
                   </td>
                   <td className="p-4">
@@ -102,16 +121,20 @@ export default function SecurityLogsPage() {
                     </span>
                   </td>
                   <td className="p-4">
-                    <p className="text-sm font-medium text-slate-900">{log.visitor}</p>
+                    <p className="text-sm font-medium text-slate-900">{log.guestName || "Unknown"}</p>
                   </td>
                   <td className="p-4">
-                    <p className="text-sm text-slate-600">{log.destination}</p>
+                    <p className="text-sm text-slate-600">{log.resident?.address || "Unknown"}</p>
                   </td>
                   <td className="p-4 pr-6">
-                    {log.reason ? (
+                    {log.status === "EXPIRED" ? (
                       <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-red-50 text-red-600 border border-red-100">
                         <ShieldAlert className="w-3 h-3 mr-1.5" strokeWidth={2} />
-                        {log.reason}
+                        Expired
+                      </span>
+                    ) : log.vehicleInfo ? (
+                      <span className="text-xs text-slate-600 font-medium border border-slate-200 px-2.5 py-1 rounded-md bg-white">
+                        Car: {log.vehicleInfo}
                       </span>
                     ) : (
                       <span className="text-xs text-slate-400 font-medium">-</span>

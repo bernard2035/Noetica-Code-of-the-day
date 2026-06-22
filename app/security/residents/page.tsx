@@ -3,12 +3,29 @@
 import { motion } from "framer-motion";
 import { Search, MapPin, Phone, User } from "lucide-react";
 
+import { useState, useEffect } from "react";
+import { getAllResidentsForSecurity } from "@/app/actions/security";
+
 export default function SecurityResidentsPage() {
-  const residents = [
-    { id: 1, name: "David O.", unit: "Unit 4B", phone: "+234 800 123 4567", status: "Active" },
-    { id: 2, name: "Jane Smith", unit: "Unit 12C", phone: "+234 800 987 6543", status: "Active" },
-    { id: 3, name: "Samuel Agu", unit: "Block 5", phone: "+234 801 234 5678", status: "Away" },
-  ];
+  const [residents, setResidents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    async function fetchResidents() {
+      try {
+        const data = await getAllResidentsForSecurity();
+        setResidents(data);
+      } catch (err) {
+        console.error("Failed to load residents", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchResidents();
+  }, []);
+
+  const filtered = residents.filter(r => r.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
@@ -30,6 +47,8 @@ export default function SecurityResidentsPage() {
           <input 
             type="text" 
             placeholder="Search by name, unit, or phone number..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-12 pr-4 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all font-medium"
           />
         </div>
@@ -53,11 +72,19 @@ export default function SecurityResidentsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {residents.map((res) => (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={4} className="p-8 text-center text-slate-500">Loading residents...</td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="p-8 text-center text-slate-500">No residents found.</td>
+                </tr>
+              ) : filtered.map((res) => (
                 <tr key={res.id} className="hover:bg-slate-50 transition-colors">
                   <td className="p-4 pl-6">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold uppercase">
                         {res.name.charAt(0)}
                       </div>
                       <p className="text-sm font-medium text-slate-900">{res.name}</p>
@@ -66,20 +93,20 @@ export default function SecurityResidentsPage() {
                   <td className="p-4">
                     <div className="flex items-center text-slate-700 text-sm font-medium">
                       <MapPin className="w-4 h-4 mr-2 text-slate-400" strokeWidth={1.5} />
-                      {res.unit}
+                      {res.residentProfile?.address || "N/A"}
                     </div>
                   </td>
                   <td className="p-4">
                     <div className="flex items-center text-slate-700 text-sm font-medium">
                       <Phone className="w-4 h-4 mr-2 text-slate-400" strokeWidth={1.5} />
-                      {res.phone}
+                      {res.residentProfile?.phone || "N/A"}
                     </div>
                   </td>
                   <td className="p-4">
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${
-                      res.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200'
+                      res.residentProfile?.isAway === false ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200'
                     }`}>
-                      {res.status}
+                      {res.residentProfile?.isAway === false ? "Active" : "Away"}
                     </span>
                   </td>
                 </tr>
