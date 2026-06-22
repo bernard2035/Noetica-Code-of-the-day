@@ -124,3 +124,69 @@ export async function createSecurityGuard(formData: FormData) {
     return { success: false, message: "Internal server error" };
   }
 }
+
+export async function createResident(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    throw new Error("Unauthorized");
+  }
+
+  const name = formData.get("name") as string;
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+  const address = formData.get("address") as string;
+
+  if (!name || !email || !password) {
+    return { success: false, message: "Name, email and password are required" };
+  }
+
+  try {
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return { success: false, message: "Email is already registered" };
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const uniqueId = `RES-${Math.floor(10000 + Math.random() * 90000)}`;
+
+    await prisma.user.create({
+      data: {
+        name,
+        email,
+        passwordHash,
+        role: "RESIDENT",
+        residentProfile: {
+          create: {
+            uniqueId,
+            address: address || null,
+          },
+        },
+      },
+    });
+
+    return { success: true, message: "Resident created successfully" };
+  } catch (error) {
+    console.error("Create resident error:", error);
+    return { success: false, message: "Internal server error" };
+  }
+}
+
+export async function deleteUser(userId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || (session.user as any).role !== "ADMIN") {
+    throw new Error("Unauthorized");
+  }
+
+  // Prevent self-deletion
+  if (userId === session.user.id) {
+    return { success: false, message: "You cannot delete your own account" };
+  }
+
+  try {
+    await prisma.user.delete({ where: { id: userId } });
+    return { success: true };
+  } catch (error) {
+    console.error("Delete user error:", error);
+    return { success: false, message: "Failed to delete user" };
+  }
+}

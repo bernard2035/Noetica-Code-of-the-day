@@ -85,3 +85,49 @@ export async function getAccessHistory() {
 
   return history;
 }
+
+export async function getPaymentHistory() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const residentProfile = await prisma.residentProfile.findUnique({
+    where: { userId: session.user.id },
+  });
+
+  if (!residentProfile) return { payments: [], feeStatus: "PENDING", defaultFee: 50000 };
+
+  const [payments, settings] = await Promise.all([
+    prisma.payment.findMany({
+      where: { residentId: residentProfile.id },
+      orderBy: { date: "desc" },
+    }),
+    prisma.estateSettings.findFirst(),
+  ]);
+
+  return {
+    payments,
+    feeStatus: residentProfile.securityFeeStatus,
+    defaultFee: settings?.defaultSecurityFee || 50000,
+  };
+}
+
+export async function cancelAccessCode(codeId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const residentProfile = await prisma.residentProfile.findUnique({
+    where: { userId: session.user.id },
+  });
+
+  if (!residentProfile) throw new Error("Resident profile not found");
+
+  // Only cancel codes belonging to this resident
+  await prisma.accessCode.updateMany({
+    where: { id: codeId, residentId: residentProfile.id, status: "ACTIVE" },
+    data: { status: "CANCELLED" },
+  });
+
+  revalidatePath("/resident/history");
+  revalidatePath("/resident");
+  return { success: true };
+}

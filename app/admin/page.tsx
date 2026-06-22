@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import EstateMapContainer from "@/components/EstateMapContainer";
 import { getAdminDashboardStats } from "@/app/actions/admin";
+import Link from "next/link";
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -147,15 +148,21 @@ export default function AdminDashboard() {
           <div className="glass-panel p-6 rounded-xl border border-slate-200">
             <h3 className="font-semibold text-slate-900 mb-4">Quick Management</h3>
             <div className="space-y-3">
-              <button className="w-full text-left px-4 py-3 bg-slate-100 hover:bg-slate-200/50 rounded-xl text-slate-600 hover:text-slate-900 transition-colors text-sm font-medium border border-slate-300">
-                + Add New Resident
-              </button>
-              <button className="w-full text-left px-4 py-3 bg-slate-100 hover:bg-slate-200/50 rounded-xl text-slate-600 hover:text-slate-900 transition-colors text-sm font-medium border border-slate-300">
-                + Register Security Guard
-              </button>
-              <button className="w-full text-left px-4 py-3 bg-slate-100 hover:bg-slate-200/50 rounded-xl text-slate-600 hover:text-slate-900 transition-colors text-sm font-medium border border-slate-300">
-                Manage Security Fees
-              </button>
+              <Link href="/admin/residents" className="block">
+                <button className="w-full text-left px-4 py-3 bg-slate-100 hover:bg-slate-200/50 rounded-xl text-slate-600 hover:text-slate-900 transition-colors text-sm font-medium border border-slate-300">
+                  + Add New Resident
+                </button>
+              </Link>
+              <Link href="/admin/security" className="block">
+                <button className="w-full text-left px-4 py-3 bg-slate-100 hover:bg-slate-200/50 rounded-xl text-slate-600 hover:text-slate-900 transition-colors text-sm font-medium border border-slate-300">
+                  + Register Security Guard
+                </button>
+              </Link>
+              <Link href="/admin/settings" className="block">
+                <button className="w-full text-left px-4 py-3 bg-slate-100 hover:bg-slate-200/50 rounded-xl text-slate-600 hover:text-slate-900 transition-colors text-sm font-medium border border-slate-300">
+                  Manage Security Fees
+                </button>
+              </Link>
             </div>
           </div>
 

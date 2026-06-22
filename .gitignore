@@ -45,3 +45,7 @@ webapp_logs.zip
 azure_logs/
 azure_logs2/
 *.zip
+
+webapp_logs*/
+.next/
+release.zip
