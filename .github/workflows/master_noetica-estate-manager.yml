@@ -87,13 +87,17 @@ jobs:
           KUDU_USER: ${{ secrets.KUDU_USER }}
           KUDU_PASS: ${{ secrets.KUDU_PASS }}
         run: |
-          # Use Kudu's zipdeploy endpoint directly — no Azure CLI needed
-          # This is the same method that worked for the manual deployment
-          curl -X POST \
-            --user "$KUDU_USER:$KUDU_PASS" \
-            --header "Content-Type: application/zip" \
+          echo "Deploying to Azure via Kudu ZipDeploy..."
+          HTTP_STATUS=$(curl -s -o /tmp/kudu_response.txt -w "%{http_code}" \
+            -X POST \
+            -u "${KUDU_USER}:${KUDU_PASS}" \
+            -H "Content-Type: application/zip" \
             --data-binary @release.zip \
-            --fail \
-            --show-error \
-            "https://noetica-estate-manager.scm.azurewebsites.net/api/zipdeploy?isAsync=false"
-          echo "Deployment complete!"
+            "https://noetica-estate-manager.scm.azurewebsites.net/api/zipdeploy")
+          echo "HTTP Status: $HTTP_STATUS"
+          cat /tmp/kudu_response.txt
+          if [ "$HTTP_STATUS" != "200" ] && [ "$HTTP_STATUS" != "202" ]; then
+            echo "Deployment failed with status $HTTP_STATUS"
+            exit 1
+          fi
+          echo "Deployment successful!"
